@@ -1,0 +1,12 @@
+.env
+temp.txt
+anotacoes.txt
+req.txt
+pip_libs.txt
+
+__pycache__
+
+*.key
+*.pem
+
+.log*

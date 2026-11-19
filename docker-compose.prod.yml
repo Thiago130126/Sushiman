@@ -1,0 +1,64 @@
+# adicionar a linha command: python manage.py runserver 0.0.0.0:8000 no serviço do backend
+
+name: sushiman_project
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    restart: always
+    environment:
+      POSTGRES_DB: ${NAME_DB}
+      POSTGRES_USER: ${USER_DB}
+      POSTGRES_PASSWORD: ${PASSWORD_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB} -d ${NAME_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  backend:
+    build: ./sushiman_django
+    restart: always
+    container_name: backend
+    env_file: ./sushiman_django/.env
+    environment:
+      HOST_DB: db
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - static_volumes:/app/staticfiles
+      - media_volumes:/app/media
+      - ./logs:/app/logs
+  
+  frontend:
+    build: ./sushiman_next
+    restart: always
+    container_name: frontend
+    env_file:
+      - ./sushiman_next/.env
+      - ./sushiman_next/.env.local
+    depends_on:
+      - backend
+  
+  proxy_reverso:
+    image: nginx:1.27-alpine
+    restart: always
+    container_name: proxy_reverso_nginx
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_volumes:/app/staticfiles:ro
+      - media_volumes:/app/media:ro
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  static_volumes:
+  media_volumes:
