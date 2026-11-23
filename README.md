@@ -20,3 +20,10 @@ Configurei o settings.py do django já para usar o banco de dados criado no cont
 Comfigurei o sistema de logging do django para salvar e fazer rotação de arquivos de logs. Deixei pronto .env.examples com algumas explicações do que colocar em cada variável.
 * Já deixei pronta a arquitetura de hierarquia de componentes com as pastas atoms, molecules, organisms e pages.
 * Também deixei criado o app accounts que ficará responsável por lidar com o usuário
+
+
+# GitHub
+
+## Branch Main
+
+A main está protegida de qualquer commit, para fazer um commit no repositório, na pasta do código, precisa criar umar nova branch com o comando git checkout -b 'nome'
