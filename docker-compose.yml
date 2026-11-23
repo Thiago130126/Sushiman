@@ -39,12 +39,24 @@ services:
       - ./logs:/app/logs
   
   frontend:
-    build: ./sushiman_next
+    build: 
+      context: ./sushiman_next
+      target: deps
     restart: always
     container_name: frontend
+    command: npm run dev -- --webpack -H 0.0.0.0
+    volumes:
+      - ./sushiman_next:/app
+      - /app/node_modules
+      - /app/.next
     env_file:
       - ./sushiman_next/.env
       - ./sushiman_next/.env.local
+    environment:
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "1"
+      HOSTNAME: "0.0.0.0"
+      NODE_ENV: development
     depends_on:
       - backend
   
