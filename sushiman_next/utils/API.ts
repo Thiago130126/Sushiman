@@ -1,6 +1,6 @@
 type Verbo = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-class Api{
+export class Api{
     rota_base: string;
     rota_refresh: string;
     rota_csrf: string;
