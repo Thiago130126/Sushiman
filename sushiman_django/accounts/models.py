@@ -50,6 +50,9 @@ class Profile(models.Model):
     bio = models.TextField(blank=True, max_length=500)
     email_publico = models.EmailField(blank=True)
 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         verbose_name = 'Perfil'
         verbose_name_plural = 'Perfis'
