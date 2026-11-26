@@ -9,6 +9,11 @@ from decouple import config
 from rest_framework_simplejwt.exceptions import TokenError
 from django.middleware.csrf import get_token
 from django.contrib.auth import get_user_model
+from rest_framework.routers import DefaultRouter
+from rest_framework.viewsets import ModelViewSet, ViewSet
+from .serializer import UserRegisterSerializer
+from rest_framework.generics import CreateAPIView
+from .authentication import CSRFRequired, CookieJWTAuthentication
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +26,7 @@ User = get_user_model()
 
 class RefreshView(APIView):
     authentication_classes = []
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny, CSRFRequired]
 
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
@@ -72,3 +77,8 @@ class CsrfTokenView(APIView):
         return Response({
             'csrf_token': csrf_token
         })
+
+class RegisterUserView(CreateAPIView):
+    serializer_class = UserRegisterSerializer
+    permission_classes = [AllowAny, CSRFRequired]
+    queryset = User.objects.all()

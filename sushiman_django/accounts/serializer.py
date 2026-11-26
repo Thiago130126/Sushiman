@@ -27,7 +27,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'first_name', 'last_name', 'data_nascimento', 'password', 'confirm_password']
         extra_kwargs = {
-            'password': {'write_only': True, 'style': {'input_type': 'password'}}
+            'password': {'write_only': True, 'style': {'input_type': 'password'}},
+            'first_name': {'required': True, 'allow_blank': False},
+            'last_name': {'required': True, 'allow_blank': False}
         }
 
     def validate_password(self, value):
