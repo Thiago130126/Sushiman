@@ -1,6 +1,7 @@
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import CSRFCheck
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import BasePermission
 
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
@@ -25,3 +26,9 @@ class CookieJWTAuthentication(JWTAuthentication):
 
         if reason:
             raise AuthenticationFailed('Falha ao validar CSRF token: ', reason)
+
+
+class CSRFRequired(BasePermission):
+    def has_permission(self, request, view):
+        CookieJWTAuthentication().enforce_csrf(request)
+        return True
