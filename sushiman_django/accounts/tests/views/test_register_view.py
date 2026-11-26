@@ -19,6 +19,10 @@ CSRF token ausêncte
 Email ausente
 Email em uso
 First_name ausênte
+
+26/11/26
+
+Testar a integração do cadastro de usuário com o login
 """
 
 User = get_user_model()
@@ -158,3 +162,33 @@ class AccountsViewsTestCase(APITestCase):
             )
     
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_register_user_view_success_loign_automático(self):
+        # vou testar a view de regsitrar usuários após o login automático
+
+        client_csrf = APIClient(enforce_csrf_checks=True)
+
+        email_teste = fake_data.free_email()
+        password = fake_data.password()
+
+        novo_usuario = {
+            'email': email_teste,
+            'first_name': fake_data.first_name(),
+            'last_name': fake_data.last_name(),
+            'password': password,
+            'confirm_password': password
+        }
+
+        csrf_resp = client_csrf.get(self.csrf_url)
+        csrf_token = csrf_resp.data['csrf_token']
+
+        response = client_csrf.post(
+            reverse('accounts:register_user'), 
+            novo_usuario,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('access_token', response.cookies)
+        self.assertIn('refresh_token', response.cookies)
