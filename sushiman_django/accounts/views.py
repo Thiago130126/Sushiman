@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 import logging
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from decouple import config
@@ -11,7 +11,7 @@ from django.middleware.csrf import get_token
 from django.contrib.auth import get_user_model
 from rest_framework.routers import DefaultRouter
 from rest_framework.viewsets import ModelViewSet, ViewSet
-from .serializer import UserRegisterSerializer
+from .serializer import UserRegisterSerializer, CustomUserSerializer
 from rest_framework.generics import CreateAPIView
 from .authentication import CSRFRequired, CookieJWTAuthentication
 from django.contrib.auth import authenticate
@@ -131,3 +131,11 @@ class UserLoginView(APIView):
 
         return response
 
+
+class UserProfileView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
