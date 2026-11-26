@@ -15,6 +15,7 @@ from .serializer import UserRegisterSerializer
 from rest_framework.generics import CreateAPIView
 from .authentication import CSRFRequired, CookieJWTAuthentication
 from django.contrib.auth import authenticate
+from .utils import set_auth_cookies
 
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,21 @@ class RegisterUserView(CreateAPIView):
     permission_classes = [AllowAny, CSRFRequired]
     queryset = User.objects.all()
 
+    def create(self, request, *args, **kwargs):
+        seralizer = self.get_serializer(data=request.data)
+        seralizer.is_valid(raise_exception=True)
+        user = seralizer.save()
+
+        headers = self.get_success_headers(seralizer.data)
+        response = Response(
+            {'message': 'Conta criada com sucesso'},
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
+
+        logger.info("Cadastro realizado com sucesso. ID: %s", user.id)
+        return set_auth_cookies(response, user)
+
 class UserLoginView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny, CSRFRequired]
@@ -93,6 +109,7 @@ class UserLoginView(APIView):
         password = request.data.get('password')
 
         if not email or not password:
+            logger.warning("Tentativa de login sem email ou senha fornecidos")
             return Response(
                 {'detail': 'E-mail e senha são obrigatórios.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -100,31 +117,17 @@ class UserLoginView(APIView):
 
         user = authenticate(request, email=email, password=password)
         if not user:
+            logger.warning("Falha de autenticação para o email: %s", email)
             return Response(
                 {'erro': 'Email ou senha incorretos'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        refresh_token = RefreshToken.for_user(user)
-        access_token = str(refresh_token.access_token)
-
         response = Response({'message': 'Login realizado com sucesso'}, status=status.HTTP_200_OK)
 
-        response.set_cookie(
-            key='access_token',
-            value=access_token,
-            httponly=True,
-            secure=config('COOKIE_SECURE', default=False, cast=bool),
-            samesite='Lax'
-        )
+        response = set_auth_cookies(response, user)
 
-        response.set_cookie(
-            key='refresh_token',
-            value=refresh_token,
-            httponly=True,
-            secure=config('COOKIE_SECURE', default=False, cast=bool),
-            samesite='Lax'
-        )
+        logger.info("Sucesso para logar o usuário ID: %s", user.id)
 
         return response
 
