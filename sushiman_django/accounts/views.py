@@ -14,6 +14,7 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from .serializer import UserRegisterSerializer
 from rest_framework.generics import CreateAPIView
 from .authentication import CSRFRequired, CookieJWTAuthentication
+from django.contrib.auth import authenticate
 
 
 logger = logging.getLogger(__name__)
@@ -82,3 +83,48 @@ class RegisterUserView(CreateAPIView):
     serializer_class = UserRegisterSerializer
     permission_classes = [AllowAny, CSRFRequired]
     queryset = User.objects.all()
+
+class UserLoginView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny, CSRFRequired]
+
+    def post(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if not email or not password:
+            return Response(
+                {'detail': 'E-mail e senha são obrigatórios.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = authenticate(request, email=email, password=password)
+        if not user:
+            return Response(
+                {'erro': 'Email ou senha incorretos'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        refresh_token = RefreshToken.for_user(user)
+        access_token = str(refresh_token.access_token)
+
+        response = Response({'message': 'Login realizado com sucesso'}, status=status.HTTP_200_OK)
+
+        response.set_cookie(
+            key='access_token',
+            value=access_token,
+            httponly=True,
+            secure=config('COOKIE_SECURE', default=False, cast=bool),
+            samesite='Lax'
+        )
+
+        response.set_cookie(
+            key='refresh_token',
+            value=refresh_token,
+            httponly=True,
+            secure=config('COOKIE_SECURE', default=False, cast=bool),
+            samesite='Lax'
+        )
+
+        return response
+
