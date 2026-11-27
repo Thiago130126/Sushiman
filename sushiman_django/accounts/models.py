@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.conf import settings
+from django.utils import timezone
 
 # Create your models here.
 
@@ -35,6 +36,8 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
     data_nascimento = models.DateField(verbose_name='Data de Nascimento', blank=False, null=True)
+
+    last_seen_patch = models.DateTimeField(default=timezone.now, verbose_name='Ultimo patch visualizado')
 
     objects = CustomUserManager()
 

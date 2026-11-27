@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     'accounts.apps.AccountsConfig',
+    'inventory.apps.InventoryConfig',
 ]
 
 CORS_ALLOWED_ORIGINS = lista_config('ORIGINS')
