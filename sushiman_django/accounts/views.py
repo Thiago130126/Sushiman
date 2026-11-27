@@ -15,7 +15,7 @@ from .serializer import UserRegisterSerializer, CustomUserSerializer
 from rest_framework.generics import CreateAPIView
 from .authentication import CSRFRequired, CookieJWTAuthentication
 from django.contrib.auth import authenticate
-from .utils import set_auth_cookies
+from .utils import set_auth_cookies, delete_cookies
 
 
 logger = logging.getLogger(__name__)
@@ -139,3 +139,70 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = CustomUserSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = CustomUserSerializer(
+            instance=request.user,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid()
+        serializer.save()
+
+        logger.info("Usuário atualizado com sucesso; ID: %s", request.user.id)
+        return Response({'message': 'Usuário atualizado com sucesso'}, status=status.HTTP_200_OK)
+
+class UserLogoutView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        cookies_names = ['access_token', 'refresh_token']
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                logger.warning("Tentativa de deslogar usando um token inválido, ID: %s", request.user.id)
+                return Response({'erro': 'Token inválido'}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            logger.info("Logout realizado sem refresh_token no cookie. ID: %s", request.user.id)
+
+        response = Response({'message': 'Logout realizado com sucesso'}, status=status.HTTP_200_OK)
+
+        response = delete_cookies(response, cookies_names)
+
+        logger.info("Usuario deslogado com sucesso; ID: %s", request.user.id)
+        return response
+
+class UserDeleteView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if refresh_token:
+            try:
+                user = request.user
+                user_id = user.id
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                user.delete()
+            except TokenError:
+                logger.warning("Tentativa de deletar conta usando um token inválido, ID: %s", request.user.id)
+                return Response({'erro': 'Token inválido'}, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            logger.warning("Tentativa de deletar conta sem refresh_token, ID: %s", request.user.id)
+            return Response({'erro': 'Refresh token ausêncte'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response({'message': 'Conta deletada com sucesso'}, status=status.HTTP_200_OK)
+
+        response = delete_cookies(response)
+
+        logger.info("Usuario deletado com sucesso; ID: %s", user_id)
+        return response

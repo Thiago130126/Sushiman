@@ -10,11 +10,17 @@ import faker
 
 Vou criar os testes para a classe UserProfileView
 
-Vou cobrir os seguintes cenários:
+Vou cobrir os seguintes cenários para o método get:
 
 Sucesso ao visualizaer perfil - check
 verificar as informações exibidas - check
-bloquear usuário não logado
+bloquear usuário não logado - check
+
+Para o método patch:
+
+sucesso ao atualizar suas informações - check
+verificar informações atualizadas - check
+falhar ao tentar atualizar o email
 """
 
 User = get_user_model()
@@ -39,6 +45,8 @@ class UserProfileViewTestCase(APITestCase):
 
         self.csrf_url = reverse("accounts:csrf_token")
         self.refresh_url = reverse("accounts:refresh_token")
+
+    # ----- Método Get -----------
 
     def test_user_profile_success(self):
         # view funcionando perfeitamente
@@ -97,3 +105,103 @@ class UserProfileViewTestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    # -------- Patch ---------
+
+    def test_user_profile_view_patch_success(self):
+        # testar se dá tudo certo ao mudar as informações de um usuário
+
+        dados_logar = {
+            'email': email_usado,
+            'password': senha_usada
+        }
+
+        dados_atualizar = {
+            'first_name': 'João'
+        }
+
+        csrf_request = client_csrf.get(self.csrf_url)
+        csrf_token = csrf_request.data['csrf_token']
+
+        client_csrf.post(
+            reverse("accounts:login_user"),
+            data=dados_logar,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        response = client_csrf.patch(
+            reverse("accounts:profile_user"),
+            data=dados_atualizar,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_profile_view_patch_check_information(self):
+        # verificar as novas informações do usuário
+
+        dados_logar = {
+            'email': email_usado,
+            'password': senha_usada
+        }
+
+        dados_atualizar = {
+            'first_name': 'João'
+        }
+
+        csrf_request = client_csrf.get(self.csrf_url)
+        csrf_token = csrf_request.data['csrf_token']
+
+        client_csrf.post(
+            reverse("accounts:login_user"),
+            data=dados_logar,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        client_csrf.patch(
+            reverse("accounts:profile_user"),
+            data=dados_atualizar,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        user = client_csrf.get(reverse("accounts:profile_user"))
+
+        self.assertEqual(user.data['first_name'], 'João')
+        self.assertNotEqual(user.data['first_name'], nome_usado)
+
+    def test_user_profile_view_patch_email_fail(self):
+        # testar se dá tudo certo ao mudar as informações de um usuário
+
+        dados_logar = {
+            'email': email_usado,
+            'password': senha_usada
+        }
+
+        dados_atualizar = {
+            'email': fake_data.free_email()
+        }
+
+        csrf_request = client_csrf.get(self.csrf_url)
+        csrf_token = csrf_request.data['csrf_token']
+
+        client_csrf.post(
+            reverse("accounts:login_user"),
+            data=dados_logar,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        response = client_csrf.patch(
+            reverse("accounts:profile_user"),
+            data=dados_atualizar,
+            format='json',
+            HTTP_X_CSRFTOKEN=csrf_token
+        )
+
+        user = client_csrf.get(reverse("accounts:profile_user"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(user.data['email'], email_usado)
